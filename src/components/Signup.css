@@ -8,7 +8,7 @@ body, html {
   overflow: hidden; /* Prevent scrolling entirely */
 }
 
-.login-container {
+.signup-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,20 +22,19 @@ body, html {
   position: relative;
 }
 
-.login-container::before {
+.signup-container::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(107, 125, 164, 0.4); /* Dark overlay to make the card pop */
-  backdrop-filter: blur(4px); /* Slight blur for modern look */
+  background: rgba(107, 125, 164, 0.4); 
+  backdrop-filter: blur(4px); 
   z-index: 1;
 }
 
-/* Centered card instead of full-screen split */
-.login-card {
+.signup-card {
   width: 100%;
   max-width: 480px;
   background: rgba(255, 255, 255, 0.95);
@@ -48,7 +47,7 @@ body, html {
   margin: 1rem;
 }
 
-.login-logo {
+.signup-logo {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,7 +59,7 @@ body, html {
   animation: fadeIn 0.8s ease forwards;
 }
 
-.login-logo-icon {
+.signup-logo-icon {
   background: #fff7ed;
   padding: 10px;
   border-radius: 12px;
@@ -70,11 +69,11 @@ body, html {
   box-shadow: 0 4px 12px rgba(251, 146, 60, 0.15);
 }
 
-.login-logo span {
+.signup-logo span {
   color: #0f172a;
 }
 
-.login-header {
+.signup-header {
   text-align: center;
   margin-bottom: 2.5rem;
   animation: fadeUpIn 0.8s ease forwards;
@@ -82,19 +81,19 @@ body, html {
   opacity: 0;
 }
 
-.login-header h2 {
+.signup-header h2 {
   font-size: 2.25rem;
   color: #0f172a;
   margin-bottom: 0.5rem;
   font-weight: 700;
 }
 
-.login-header p {
+.signup-header p {
   color: #64748b;
   font-size: 1.05rem;
 }
 
-.login-form {
+.signup-form {
   animation: fadeUpIn 0.8s ease forwards;
   animation-delay: 0.2s;
   opacity: 0;
@@ -104,7 +103,7 @@ body, html {
   margin-bottom: 1.5rem;
 }
 
-.login-form label {
+.signup-form label {
   display: block;
   font-size: 0.95rem;
   font-weight: 500;
@@ -112,7 +111,7 @@ body, html {
   margin-bottom: 0.5rem;
 }
 
-.login-form input {
+.signup-form input {
   width: 100%;
   padding: 14px 18px;
   border: 1.5px solid #e2e8f0;
@@ -125,52 +124,18 @@ body, html {
   box-sizing: border-box;
 }
 
-.login-form input::placeholder {
+.signup-form input::placeholder {
   color: #94a3b8;
 }
 
-.login-form input:focus {
+.signup-form input:focus {
   outline: none;
   border-color: #fb923c;
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
 }
 
-.login-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  font-size: 0.95rem;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #64748b;
-  cursor: pointer;
-}
-
-.remember-me input {
-  width: 18px;
-  height: 18px;
-  accent-color: #fb923c;
-  cursor: pointer;
-}
-
-.forgot-password {
-  color: #fb923c;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.forgot-password:hover {
-  color: #ea580c;
-}
-
-.login-btn {
+.signup-btn {
   width: 100%;
   padding: 16px;
   background: #fb923c;
@@ -183,19 +148,20 @@ body, html {
   transition: all 0.3s ease;
   font-family: inherit;
   box-shadow: 0 8px 20px rgba(251, 146, 60, 0.25);
+  margin-top: 1rem;
 }
 
-.login-btn:hover {
+.signup-btn:hover {
   background: #f97316;
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(251, 146, 60, 0.3);
 }
 
-.login-btn:active {
+.signup-btn:active {
   transform: translateY(0);
 }
 
-.social-login {
+.social-signup {
   margin-top: 2rem;
   text-align: center;
   animation: fadeUpIn 0.8s ease forwards;
@@ -203,7 +169,7 @@ body, html {
   opacity: 0;
 }
 
-.social-login p {
+.social-signup p {
   color: #94a3b8;
   font-size: 0.9rem;
   position: relative;
@@ -211,8 +177,8 @@ body, html {
   font-weight: 500;
 }
 
-.social-login p::before,
-.social-login p::after {
+.social-signup p::before,
+.social-signup p::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -221,8 +187,8 @@ body, html {
   background: #e2e8f0;
 }
 
-.social-login p::before { left: 0; }
-.social-login p::after { right: 0; }
+.social-signup p::before { left: 0; }
+.social-signup p::after { right: 0; }
 
 .social-btns {
   display: flex;
@@ -258,7 +224,7 @@ body, html {
   height: 20px;
 }
 
-.signup-link {
+.login-link {
   text-align: center;
   margin-top: 2rem;
   font-size: 0.95rem;
@@ -268,79 +234,15 @@ body, html {
   opacity: 0;
 }
 
-.signup-link a {
+.login-link a {
   color: #fb923c;
   text-decoration: none;
   font-weight: 700;
   transition: color 0.2s;
 }
 
-.signup-link a:hover {
+.login-link a:hover {
   color: #ea580c;
-}
-
-/* Popup styles */
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn 0.3s ease forwards;
-}
-
-.popup-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 400px;
-  position: relative;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  animation: fadeUpIn 0.4s ease forwards;
-  font-family: 'Outfit', sans-serif;
-  box-sizing: border-box;
-}
-
-.popup-card h3 {
-  margin-top: 0;
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.popup-card p {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  line-height: 1.5;
-}
-
-.close-popup {
-  position: absolute;
-  top: 1rem;
-  right: 1.2rem;
-  background: transparent;
-  border: none;
-  font-size: 2rem;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s;
-  line-height: 1;
-}
-
-.close-popup:hover {
-  color: #0f172a;
-}
-
-.popup-btn {
-  margin-top: 1rem;
 }
 
 /* Animations */
@@ -362,20 +264,17 @@ body, html {
 
 /* Responsive constraints */
 @media (max-height: 800px) {
-  .login-card {
+  .signup-card {
     padding: 2rem;
     margin: 1rem;
   }
-  .login-header {
+  .signup-header {
     margin-bottom: 1.5rem;
   }
-  .login-logo {
+  .signup-logo {
     margin-bottom: 1.5rem;
   }
-  .login-options {
-    margin-bottom: 1.5rem;
-  }
-  .social-login {
+  .social-signup {
     margin-top: 1.5rem;
   }
 }

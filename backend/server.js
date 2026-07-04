@@ -28,6 +28,38 @@ db.serialize(() => {
     password TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  
+  db.run(`CREATE TABLE IF NOT EXISTS foods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    price REAL,
+    description TEXT,
+    image TEXT,
+    seller TEXT,
+    is_surplus BOOLEAN DEFAULT 0,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  
+  db.run(`CREATE TABLE IF NOT EXISTS restaurants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    owner_id INTEGER,
+    image TEXT,
+    category TEXT,
+    rating REAL,
+    time TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  
+  db.run(`CREATE TABLE IF NOT EXISTS menu_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER,
+    name TEXT,
+    price REAL,
+    description TEXT,
+    image TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 });
 
 // Helper for database queries
@@ -94,6 +126,78 @@ app.post('/api/otp-login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error during OTP login' });
+  }
+});
+
+app.get('/api/foods', async (req, res) => {
+  try {
+    const foods = await query('SELECT * FROM foods ORDER BY createdAt DESC', []);
+    res.json(foods);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error fetching foods' });
+  }
+});
+
+app.post('/api/foods', async (req, res) => {
+  const { name, price, description, image, seller, is_surplus } = req.body;
+  try {
+    const result = await runParam(
+      'INSERT INTO foods (name, price, description, image, seller, is_surplus) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, price, description, image, seller, is_surplus ? 1 : 0]
+    );
+    res.json({ message: 'Food item created successfully', food: { id: result.lastID, name, price, description, image, seller, is_surplus: is_surplus ? 1 : 0 } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error creating food item' });
+  }
+});
+
+app.get('/api/restaurants', async (req, res) => {
+  try {
+    const restaurants = await query('SELECT * FROM restaurants ORDER BY createdAt DESC', []);
+    res.json(restaurants);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error fetching restaurants' });
+  }
+});
+
+app.post('/api/restaurants', async (req, res) => {
+  const { name, owner_id, image, category, rating, time } = req.body;
+  try {
+    const result = await runParam(
+      'INSERT INTO restaurants (name, owner_id, image, category, rating, time) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, owner_id, image, category, rating, time]
+    );
+    res.json({ message: 'Restaurant created!', restaurant: { id: result.lastID, name, owner_id, image, category, rating, time } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error creating restaurant' });
+  }
+});
+
+app.get('/api/restaurants/:id/menu', async (req, res) => {
+  try {
+    const menus = await query('SELECT * FROM menu_items WHERE restaurant_id = ? ORDER BY createdAt DESC', [req.params.id]);
+    res.json(menus);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error fetching menus' });
+  }
+});
+
+app.post('/api/restaurants/:id/menu', async (req, res) => {
+  const { name, price, description, image } = req.body;
+  try {
+    const result = await runParam(
+      'INSERT INTO menu_items (restaurant_id, name, price, description, image) VALUES (?, ?, ?, ?, ?)',
+      [req.params.id, name, price, description, image]
+    );
+    res.json({ message: 'Menu item created!', item: { id: result.lastID, restaurant_id: req.params.id, name, price, description, image } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error creating menu item' });
   }
 });
 

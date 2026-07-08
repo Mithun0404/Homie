@@ -31,6 +31,12 @@ const Home = ({ user, onNavigate }) => {
   // New food form state
   const [newFood, setNewFood] = useState({ name: '', price: '', description: '', image: '', is_surplus: false });
 
+  // Cart and Orders state
+  const [cart, setCart] = useState([]);
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [orders, setOrders] = useState([]);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -72,10 +78,98 @@ const Home = ({ user, onNavigate }) => {
     }
   };
 
+  const handleAddToCart = (item, type) => {
+    setCart(prevCart => {
+      const existing = prevCart.find(cartItem => cartItem.id === item.id && cartItem.type === type);
+      if (existing) {
+        return prevCart.map(cartItem =>
+          (cartItem.id === item.id && cartItem.type === type)
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      }
+      return [...prevCart, { ...item, quantity: 1, type }];
+    });
+  };
+
+  const handleUpdateCartQuantity = (itemId, type, delta) => {
+    setCart(prevCart => {
+      return prevCart.map(cartItem => {
+        if (cartItem.id === itemId && cartItem.type === type) {
+          const newQty = cartItem.quantity + delta;
+          return { ...cartItem, quantity: newQty };
+        }
+        return cartItem;
+      }).filter(cartItem => cartItem.quantity > 0);
+    });
+  };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+    if (!deliveryAddress.trim()) {
+      alert("Please enter a delivery address.");
+      return;
+    }
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    const itemsTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const deliveryFee = 2.99;
+    const tax = itemsTotal * 0.05;
+    const finalTotal = itemsTotal + deliveryFee + tax;
+
+    const payload = {
+      user_id: user?.id || 1,
+      total_price: finalTotal,
+      address: deliveryAddress,
+      items: cart.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    };
+
+    try {
+      const response = await fetch('http://localhost:3001/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        alert("Order placed successfully!");
+        setCart([]);
+        setDeliveryAddress('');
+        setShowCartDrawer(false);
+        setActiveTab('orders');
+        fetchOrders();
+      } else {
+        alert("Failed to place order.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error placing order.");
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const userId = user?.id || 1;
+      const response = await fetch(`http://localhost:3001/api/orders?user_id=${userId}`);
+      if (response.ok) {
+        setOrders(await response.json());
+      }
+    } catch (err) {
+      console.error("Failed to fetch orders", err);
+    }
+  };
+
   useEffect(() => {
     fetchFoods();
     fetchRestaurants();
-  }, []);
+    fetchOrders();
+  }, [user]);
 
   const fetchRestaurants = async () => {
     try {
@@ -206,6 +300,11 @@ const Home = ({ user, onNavigate }) => {
           <span>Homie</span>
         </div>
         <div className="nav-actions">
+           {cart.length > 0 && (
+             <button className="cart-btn" onClick={() => setShowCartDrawer(true)}>
+               🛒 Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+             </button>
+           )}
            <button className="sell-btn" onClick={() => setShowSellModal(true)}>+ Sell Your Food</button>
            <button className="logout-btn" onClick={() => onNavigate('login')}>Logout</button>
         </div>
@@ -218,12 +317,13 @@ const Home = ({ user, onNavigate }) => {
         <div className="tabs-container">
           <button className={`tab-btn ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>🏠 Home Chefs</button>
           <button className={`tab-btn ${activeTab === 'swiggy' ? 'active' : ''}`} onClick={() => setActiveTab('swiggy')}>🚀 Swiggy Restaurants</button>
+          <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); fetchOrders(); }}>📦 My Orders</button>
         </div>
 
         {activeTab === 'home' && (
           <div className="food-grid">
             {foods.map(food => (
-              <div className="food-card" key={food.id}>
+               <div className="food-card" key={food.id}>
                 <div className="food-image-wrapper">
                   <img src={food.image} alt={food.name} className="food-image" />
                   <div className="price-tag">${Number(food.price).toFixed(2)}</div>
@@ -232,7 +332,7 @@ const Home = ({ user, onNavigate }) => {
                 <div className="food-info">
                   <h3>{food.name}</h3>
                   <p>Cooked by <strong>{food.seller}</strong></p>
-                  <button className="order-btn" onClick={() => alert(`Ordering ${food.name} - feature coming soon!`)}>Order Now</button>
+                  <button className="order-btn" onClick={() => handleAddToCart(food, 'chef')}>Add to Cart</button>
                 </div>
               </div>
             ))}
@@ -290,6 +390,52 @@ const Home = ({ user, onNavigate }) => {
                  </div>
                ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className="orders-experience">
+            <h2 className="section-title">My Orders</h2>
+            {orders.length === 0 ? (
+              <p style={{ color: '#64748b' }}>You haven't placed any orders yet.</p>
+            ) : (
+              <div className="orders-list">
+                {orders.map(order => (
+                  <div className="order-card" key={order.id}>
+                    <div className="order-header">
+                      <div>
+                        <h3>Order #{order.id}</h3>
+                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <span className={`order-status badge-${order.status ? order.status.toLowerCase() : 'pending'}`}>
+                        {order.status || 'Pending'}
+                      </span>
+                    </div>
+                    
+                    <div className="order-body">
+                      <div className="order-items-list" style={{ marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+                        {order.items && order.items.map((item, index) => (
+                          <div key={index} className="order-item-row" style={{ display: 'flex', justifyContent: 'space-between', margin: '0.4rem 0', color: '#475569' }}>
+                            <span>{item.name} x {item.quantity}</span>
+                            <span>${Number(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="order-delivery-address" style={{ marginBottom: '1rem' }}>
+                        <strong>Delivery Address:</strong>
+                        <p style={{ margin: '0.2rem 0', color: '#64748b', fontSize: '0.95rem' }}>{order.address}</p>
+                      </div>
+                      
+                      <div className="order-total-summary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' }}>
+                        <span>Total Paid</span>
+                        <strong style={{ color: '#ea580c', fontSize: '1.15rem' }}>${Number(order.total_price).toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -391,7 +537,8 @@ const Home = ({ user, onNavigate }) => {
                   {item.image && <img src={item.image} style={{ width: '100%', height: '120px', borderRadius: '12px', objectFit: 'cover' }} alt={item.name} />}
                   <h4 style={{ margin: '0.5rem 0' }}>{item.name}</h4>
                   <div className="price-tag" style={{ position: 'static', display: 'inline-block', background: '#f8fafc', padding: '0.2rem 0.5rem', marginBottom: '0.5rem' }}>${Number(item.price).toFixed(2)}</div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{item.description}</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>{item.description}</p>
+                  <button className="order-btn swiggy-btn" style={{ padding: '8px', fontSize: '0.9rem', marginTop: 'auto' }} onClick={() => handleAddToCart(item, 'restaurant')}>Add to Cart</button>
                 </div>
               ))}
             </div>
@@ -425,6 +572,72 @@ const Home = ({ user, onNavigate }) => {
               </div>
               <button type="submit" className="submit-sell-btn">Add Dish</button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showCartDrawer && (
+        <div className="modal-overlay" style={{ zIndex: 120 }}>
+          <div className="modal-card" style={{ maxWidth: '550px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button className="close-modal" onClick={() => setShowCartDrawer(false)}>×</button>
+            <h2>Your Shopping Cart</h2>
+            
+            {cart.length === 0 ? (
+              <p style={{ color: '#64748b', textAlign: 'center', margin: '2rem 0' }}>Your cart is empty.</p>
+            ) : (
+              <>
+                <div className="cart-items-container" style={{ margin: '1.5rem 0', maxHeight: '250px', overflowY: 'auto', borderBottom: '1px dashed #cbd5e1', paddingBottom: '1rem' }}>
+                  {cart.map((item, idx) => (
+                    <div className="cart-item-row" key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <div className="cart-item-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <strong style={{ fontSize: '0.95rem' }}>{item.name}</strong>
+                        <span className="cart-item-type" style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.type === 'chef' ? 'Home Chef' : 'Restaurant'}</span>
+                      </div>
+                      <div className="cart-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button type="button" className="qty-adjust" style={{ background: '#f1f5f9', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleUpdateCartQuantity(item.id, item.type, -1)}>-</button>
+                        <span className="cart-qty" style={{ fontWeight: '600', width: '20px', textAlign: 'center' }}>{item.quantity}</span>
+                        <button type="button" className="qty-adjust" style={{ background: '#f1f5f9', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleUpdateCartQuantity(item.id, item.type, 1)}>+</button>
+                        <span className="cart-item-price" style={{ minWidth: '60px', textAlign: 'right', fontWeight: '700', marginLeft: '8px' }}>${Number(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cart-totals" style={{ padding: '0rem 0 1.5rem 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div className="totals-row" style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                    <span>Subtotal:</span>
+                    <span>${Number(cart.reduce((sum, item) => sum + item.price * item.quantity, 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="totals-row" style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                    <span>Delivery Fee:</span>
+                    <span>$2.99</span>
+                  </div>
+                  <div className="totals-row" style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                    <span>Tax (5%):</span>
+                    <span>${Number(cart.reduce((sum, item) => sum + item.price * item.quantity, 0) * 0.05).toFixed(2)}</span>
+                  </div>
+                  <div className="totals-row grand-total" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', color: '#0f172a', borderTop: '1px solid #cbd5e1', paddingTop: '8px', marginTop: '4px' }}>
+                    <span>Grand Total:</span>
+                    <span style={{ color: '#ea580c' }}>${Number(cart.reduce((sum, item) => sum + item.price * item.quantity, 0) * 1.05 + 2.99).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handlePlaceOrder} className="checkout-form">
+                  <div className="input-group">
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>Delivery Address</label>
+                    <textarea 
+                      required 
+                      rows="2" 
+                      value={deliveryAddress} 
+                      onChange={e => setDeliveryAddress(e.target.value)} 
+                      placeholder="Enter your complete delivery address..."
+                      style={{ width: '100%', padding: '10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' }}
+                    ></textarea>
+                  </div>
+                  <button type="submit" className="submit-sell-btn" style={{ background: '#fb923c', padding: '14px' }}>Place Order</button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}

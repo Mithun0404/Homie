@@ -60,6 +60,24 @@ db.serialize(() => {
     image TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  
+  db.run(`CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    total_price REAL,
+    address TEXT,
+    status TEXT DEFAULT 'Pending',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  
+  db.run(`CREATE TABLE IF NOT EXISTS order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    name TEXT,
+    price REAL,
+    quantity INTEGER,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 });
 
 // Helper for database queries
@@ -198,6 +216,49 @@ app.post('/api/restaurants/:id/menu', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error creating menu item' });
+  }
+});
+
+app.post('/api/orders', async (req, res) => {
+  const { user_id, total_price, address, items } = req.body;
+  try {
+    const orderResult = await runParam(
+      'INSERT INTO orders (user_id, total_price, address, status) VALUES (?, ?, ?, ?)',
+      [user_id, total_price, address, 'Pending']
+    );
+    const orderId = orderResult.lastID;
+
+    for (const item of items) {
+      await runParam(
+        'INSERT INTO order_items (order_id, name, price, quantity) VALUES (?, ?, ?, ?)',
+        [orderId, item.name, item.price, item.quantity]
+      );
+    }
+
+    res.json({ message: 'Order placed successfully', orderId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error placing order' });
+  }
+});
+
+app.get('/api/orders', async (req, res) => {
+  const { user_id } = req.query;
+  if (!user_id) return res.status(400).json({ error: 'user_id query parameter is required' });
+  try {
+    const orders = await query('SELECT * FROM orders WHERE user_id = ? ORDER BY createdAt DESC', [user_id]);
+    const ordersWithItems = [];
+    for (const order of orders) {
+      const items = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+      ordersWithItems.push({
+        ...order,
+        items
+      });
+    }
+    res.json(ordersWithItems);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error fetching orders' });
   }
 });
 
